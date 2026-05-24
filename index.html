@@ -1,0 +1,524 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>matrixrain — Matrix-style digital rain as a drop-in plugin</title>
+  <meta name="description" content="The Matrix digital rain effect as a themeable canvas plugin. Ships with classic green katakana plus binary, emoji, terminal, bloodrain, arctic, and GBF themes.">
+
+  <meta property="og:title" content="matrixrain — Matrix digital rain as a drop-in plugin">
+  <meta property="og:description" content="The Matrix digital rain effect as a themeable canvas plugin. Classic green katakana plus binary, emoji, terminal, bloodrain, arctic, and GBF themes.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://goboldlyforward.github.io/matrixrain/">
+
+  <link rel="preconnect" href="https://rsms.me/">
+  <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+
+  <link rel="stylesheet" href="matrixrain.css">
+  <link rel="stylesheet" href="demo.css">
+
+  <style>
+    /* ---------- Accent (Matrix green) ---------- */
+    :root {
+      --gbf-accent:      #16a34a;                    /* green-600 */
+      --gbf-accent-soft: rgba(22, 163, 74, 0.10);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --gbf-accent:      #4ade80;                  /* green-400 */
+        --gbf-accent-soft: rgba(74, 222, 128, 0.14);
+      }
+    }
+
+    /* h3 inside .gbf-section (sub-headings). */
+    .gbf-section h3 {
+      font-family: var(--gbf-font-sans);
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin: 2.5rem 0 0.75rem;
+    }
+
+    /* Inline code inside .gbf-section prose. */
+    .gbf-section :not(pre) > code {
+      background: var(--gbf-bg-code);
+      border: 1px solid var(--gbf-border);
+      padding: 0.05rem 0.4rem;
+      border-radius: 4px;
+      font: 0.875em var(--gbf-font-mono);
+    }
+
+    /* ---------- Hero header with rain behind ---------- */
+    /* Override the shared header styles so the rain reads on a dark canvas.
+     * The .gbf-header still provides the layout & typography; we just paint
+     * the canvas behind it and lighten the text. */
+    .gbf-header.hero-rain {
+      position: relative;
+      overflow: hidden;
+      padding: 6.5rem 0 5rem;
+      background: #000;
+      border-bottom: 1px solid #000;
+    }
+    .gbf-header.hero-rain .gbf-container { position: relative; z-index: 2; }
+    .gbf-header.hero-rain .gbf-title,
+    .gbf-header.hero-rain .gbf-eyebrow,
+    .gbf-header.hero-rain .gbf-nav a {
+      color: #f4fff7;
+      text-shadow: 0 1px 12px rgba(0, 0, 0, 0.85);
+    }
+    .gbf-header.hero-rain .gbf-tagline {
+      color: #c8e8d3;
+      text-shadow: 0 1px 12px rgba(0, 0, 0, 0.85);
+    }
+    .gbf-header.hero-rain .gbf-title__accent {
+      color: #4ade80;
+      text-shadow:
+        0 0 12px rgba(74, 222, 128, 0.7),
+        0 0 24px rgba(22, 163, 74, 0.55);
+    }
+    .gbf-header.hero-rain .gbf-install {
+      background: rgba(10, 14, 10, 0.65);
+      border-color: rgba(74, 222, 128, 0.35);
+      color: #d6ffe0;
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+    }
+    .gbf-header.hero-rain .gbf-install::before { color: #6b9b78; }
+    .gbf-header.hero-rain .gbf-nav a {
+      border-bottom-color: rgba(74, 222, 128, 0.45);
+    }
+    .gbf-header.hero-rain .gbf-nav a:hover {
+      color: #4ade80;
+      border-color: #4ade80;
+    }
+    /* The canvas the plugin mounts inside the header. */
+    .hero-rain__rain {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+    }
+    .hero-rain__rain::after {
+      /* Bottom fade so the rain dissolves into the page below it */
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(to bottom, transparent 60%, rgba(0,0,0,0.55) 100%);
+      z-index: 1;
+    }
+
+    /* ---------- Playground stage ---------- */
+    .gbf-canvas--bleed { padding: 0; overflow: hidden; }
+
+    .play-stage {
+      position: relative;
+      width: 100%;
+      height: 460px;
+      background: #000;
+    }
+    /* The plugin mounts here and fills it. */
+    .play-stage .play-stage__rain { position: absolute; inset: 0; }
+
+    /* Controls panel — sits below the stage in column layout, beside it on wide */
+    .controls {
+      display: grid;
+      gap: 1rem 1.25rem;
+      grid-template-columns: 1fr;
+      padding: 1rem 1.25rem;
+      background: var(--gbf-bg-elevated);
+      border: 1px solid var(--gbf-border);
+      border-radius: var(--gbf-radius);
+    }
+    @media (min-width: 640px) {
+      .controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    .control {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      min-width: 0;
+    }
+    .control__label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--gbf-fg-muted);
+    }
+    .control__value {
+      font-family: var(--gbf-font-mono);
+      font-size: 0.8125rem;
+      color: var(--gbf-fg);
+      text-transform: none;
+      letter-spacing: 0;
+    }
+    .control__select {
+      appearance: none;
+      -webkit-appearance: none;
+      font: 0.9375rem var(--gbf-font-sans);
+      color: var(--gbf-fg);
+      background: var(--gbf-bg);
+      border: 1px solid var(--gbf-border-strong);
+      border-radius: var(--gbf-radius);
+      padding: 0.55rem 2rem 0.55rem 0.75rem;
+      background-image: linear-gradient(45deg, transparent 50%, var(--gbf-fg-muted) 50%), linear-gradient(135deg, var(--gbf-fg-muted) 50%, transparent 50%);
+      background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%;
+      background-size: 5px 5px, 5px 5px;
+      background-repeat: no-repeat;
+      cursor: pointer;
+    }
+    .control__select:focus {
+      outline: none;
+      border-color: var(--gbf-accent);
+      box-shadow: 0 0 0 3px var(--gbf-accent-soft);
+    }
+
+    /* Color picker — native input dressed to match other controls */
+    .control__color-row {
+      display: flex;
+      align-items: center;
+      gap: 0.625rem;
+    }
+    .control__color {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 44px;
+      height: 32px;
+      padding: 0;
+      border: 1px solid var(--gbf-border-strong);
+      border-radius: var(--gbf-radius);
+      background: var(--gbf-bg);
+      cursor: pointer;
+      overflow: hidden;
+    }
+    .control__color::-webkit-color-swatch-wrapper { padding: 2px; }
+    .control__color::-webkit-color-swatch { border: none; border-radius: 4px; }
+    .control__color::-moz-color-swatch { border: none; border-radius: 4px; }
+    .control__color:focus {
+      outline: none;
+      border-color: var(--gbf-accent);
+      box-shadow: 0 0 0 3px var(--gbf-accent-soft);
+    }
+    .control__reset {
+      font-family: var(--gbf-font-sans);
+      font-size: 0.75rem;
+      font-weight: 600;
+      line-height: 1;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--gbf-fg-muted);
+      background: transparent;
+      border: 1px solid var(--gbf-border);
+      border-radius: var(--gbf-radius);
+      padding: 0 0.75rem;
+      height: 32px;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .control__reset:hover {
+      color: var(--gbf-accent);
+      border-color: var(--gbf-accent);
+    }
+
+    /* ---------- Theme gallery ---------- */
+    .theme-grid {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    }
+    .theme-tile {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-radius: var(--gbf-radius);
+      overflow: hidden;
+      border: 1px solid var(--gbf-border);
+      background: #000;
+    }
+    .theme-tile__rain { position: absolute; inset: 0; }
+    .theme-tile__label {
+      position: absolute;
+      left: 0.6rem;
+      bottom: 0.55rem;
+      z-index: 2;
+      font-family: var(--gbf-font-mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #fff;
+      background: rgba(0, 0, 0, 0.55);
+      padding: 0.2rem 0.5rem;
+      border-radius: 999px;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+    .theme-tile[data-theme="arctic"] .theme-tile__label {
+      color: #0d47a1;
+      background: rgba(255, 255, 255, 0.8);
+    }
+  </style>
+</head>
+<body>
+
+  <header class="gbf-header hero-rain">
+    <div class="hero-rain__rain" id="hero-rain"></div>
+    <div class="gbf-container">
+      <p class="gbf-eyebrow">Plugin</p>
+      <h1 class="gbf-title">matrix<span class="gbf-title__accent">rain</span></h1>
+      <p class="gbf-tagline">The iconic Matrix digital rain as a themeable canvas plugin. Ships with classic green katakana plus binary, emoji, terminal, bloodrain, arctic, and GBF themes — and a tiny API for live-tuning font size, speed, and density.</p>
+      <code class="gbf-install">npm install @goboldlyforward/matrixrain</code>
+      <nav class="gbf-nav">
+        <a href="https://github.com/GoBoldlyForward/matrixrain">GitHub</a>
+        <a href="https://www.npmjs.com/package/@goboldlyforward/matrixrain">npm</a>
+        <a href="https://github.com/GoBoldlyForward/matrixrain#readme">Docs</a>
+        <a href="https://github.com/GoBoldlyForward/matrixrain/blob/master/CHANGELOG.md">Changelog</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="gbf-section">
+    <div class="gbf-container">
+      <p class="gbf-eyebrow gbf-eyebrow--accent">Playground</p>
+      <h2 class="gbf-section__title">Try every knob</h2>
+      <p class="gbf-section__lede">Swap themes, drag the sliders, and watch the rain react in real time. Every change here is one <code>setOptions()</code> call.</p>
+
+      <div class="gbf-stage">
+        <div class="gbf-canvas gbf-canvas--bleed">
+          <div class="play-stage">
+            <div class="play-stage__rain" id="play-rain"></div>
+          </div>
+        </div>
+
+        <div class="controls">
+          <div class="control">
+            <label class="control__label" for="ctrl-theme">
+              <span>Theme</span>
+              <span class="control__value" id="val-theme">matrix</span>
+            </label>
+            <select id="ctrl-theme" class="control__select">
+              <option value="matrix">matrix — classic green katakana</option>
+              <option value="binary">binary — 0/1 in lime</option>
+              <option value="emoji">emoji — weather + space</option>
+              <option value="terminal">terminal — amber on coal</option>
+              <option value="bloodrain">bloodrain — red on near-black</option>
+              <option value="arctic">arctic — pale blue on white</option>
+              <option value="gbf">gbf — yellow binary (the site header)</option>
+            </select>
+          </div>
+
+          <div class="control">
+            <label class="control__label" for="ctrl-fontsize">
+              <span>Font size</span>
+              <span class="control__value"><span id="val-fontsize">16</span> px</span>
+            </label>
+            <input type="range" id="ctrl-fontsize" class="gbf-range" min="10" max="32" step="1" value="16">
+          </div>
+
+          <div class="control">
+            <label class="control__label" for="ctrl-speed">
+              <span>Speed</span>
+              <span class="control__value"><span id="val-speed">33</span> ms/frame</span>
+            </label>
+            <input type="range" id="ctrl-speed" class="gbf-range" min="12" max="150" step="1" value="33">
+          </div>
+
+          <div class="control">
+            <label class="control__label" for="ctrl-density">
+              <span>Density</span>
+              <span class="control__value" id="val-density">1.00</span>
+            </label>
+            <input type="range" id="ctrl-density" class="gbf-range" min="0.1" max="1" step="0.05" value="1">
+          </div>
+
+          <div class="control">
+            <label class="control__label" for="ctrl-color">
+              <span>Color</span>
+              <span class="control__value" id="val-color">#00ff66</span>
+            </label>
+            <div class="control__color-row">
+              <input type="color" id="ctrl-color" class="control__color" value="#00ff66">
+              <button type="button" id="ctrl-color-reset" class="control__reset" title="Reset to this theme's color">Reset</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="gbf-section">
+    <div class="gbf-container">
+      <p class="gbf-eyebrow gbf-eyebrow--accent">Gallery</p>
+      <h2 class="gbf-section__title">Seven themes, one plugin</h2>
+      <p class="gbf-section__lede">Each tile is a live <code>MatrixRain</code> instance. Every theme is a preset of <code>charset · color · leadColor · background · fadeAlpha · glow · fontFamily</code> — and you can override any field per-instance, or define your own theme.</p>
+
+      <div class="theme-grid" id="theme-grid">
+        <!-- Tiles injected by script -->
+      </div>
+    </div>
+  </section>
+
+  <section class="gbf-section">
+    <div class="gbf-container">
+      <p class="gbf-eyebrow gbf-eyebrow--accent">Usage</p>
+      <h2 class="gbf-section__title">Drop it in</h2>
+      <p class="gbf-section__lede">One CSS file, one JS file, one container. The canvas fills its parent and resizes with it.</p>
+
+      <pre class="gbf-code"><code>&lt;link rel="stylesheet" href="path/to/matrixrain.css"&gt;
+&lt;script src="path/to/matrixrain.js"&gt;&lt;/script&gt;
+
+&lt;div id="hero" style="height: 60vh"&gt;&lt;/div&gt;
+
+&lt;script&gt;
+  const rain = new MatrixRain('#hero');
+
+  // Live tuning — every option is hot-swappable.
+  rain.setOptions({
+    theme:    'binary',
+    fontSize: 18,
+    speed:    50,        // ms per frame; lower = faster
+    density:  0.7,       // 0–1; fraction of columns actively raining
+  });
+&lt;/script&gt;</code></pre>
+
+      <h3>Options</h3>
+      <pre class="gbf-code"><code>new MatrixRain('#hero', {
+  theme:       'matrix',     // 'matrix' | 'binary' | 'emoji' | 'terminal' | 'bloodrain' | 'arctic' | 'gbf'
+  charset:     null,         // string or array — overrides theme's glyph set
+  color:       null,         // CSS color — overrides theme
+  leadColor:   null,         // brighter color for the leading head glyph; false to disable
+  background:  null,         // theme default, or 'transparent' to let the parent show through
+  fadeAlpha:   null,         // 0–1; trail-fade alpha per frame (lower = longer trails)
+  fontSize:    16,           // px
+  fontFamily:  null,         // overrides theme
+  speed:       33,           // ms per frame
+  density:     1.0,          // 0–1; fraction of columns raining
+  glow:        null,         // px shadowBlur; overrides theme
+  columnRatio: null,         // column step = fontSize * columnRatio
+  rowRatio:    1.0,          // row step = fontSize * rowRatio
+  resetChance: 0.025,        // probability per frame a fallen drop resets to top
+  paused:      false,
+  autoStart:   true,
+});</code></pre>
+
+      <h3>Methods</h3>
+      <pre class="gbf-code"><code>rain.start();
+rain.pause();
+rain.resume();
+rain.stop();                 // clears canvas
+rain.setOptions({ ... });    // merge + apply (hot-swap any option)
+rain.resize();               // manual re-measure (auto via ResizeObserver)
+rain.destroy();              // tear down canvas + listeners</code></pre>
+
+      <h3>Transparent over your own background</h3>
+      <pre class="gbf-code"><code>new MatrixRain('#hero', { background: 'transparent' });
+/* The plugin fades via destination-out, so whatever you paint on the
+   host element (CSS gradient, image, video) shows through the rain. */</code></pre>
+    </div>
+  </section>
+
+  <footer class="gbf-footer">
+    <div class="gbf-container gbf-footer__row">
+      <span>&copy; <span id="current-year"></span> by <a href="https://morganjlopes.com">Morgan Lopes</a>. <a href="https://www.goboldlyforward.com">Go Boldly Forward!</a></span>
+      <span>v1.0.0 &middot; <a href="https://github.com/GoBoldlyForward/matrixrain">GitHub</a></span>
+    </div>
+  </footer>
+
+  <script src="matrixrain.js"></script>
+  <script>
+    document.getElementById('current-year').textContent = new Date().getFullYear();
+
+    // ---------- Hero header ----------
+    new MatrixRain('#hero-rain', {
+      theme: 'matrix',
+      fontSize: 16,
+      speed: 38,
+      density: 0.85,
+    });
+
+    // ---------- Playground ----------
+    const play = new MatrixRain('#play-rain', {
+      theme: 'matrix',
+      fontSize: 16,
+      speed: 33,
+      density: 1.0,
+    });
+
+    const ctrlTheme      = document.getElementById('ctrl-theme');
+    const ctrlFontsize   = document.getElementById('ctrl-fontsize');
+    const ctrlSpeed      = document.getElementById('ctrl-speed');
+    const ctrlDensity    = document.getElementById('ctrl-density');
+    const ctrlColor      = document.getElementById('ctrl-color');
+    const ctrlColorReset = document.getElementById('ctrl-color-reset');
+
+    const valTheme    = document.getElementById('val-theme');
+    const valFontsize = document.getElementById('val-fontsize');
+    const valSpeed    = document.getElementById('val-speed');
+    const valDensity  = document.getElementById('val-density');
+    const valColor    = document.getElementById('val-color');
+
+    function syncColorPickerToTheme(themeName) {
+      const themeColor = (MatrixRain.THEMES[themeName] || {}).color || '#00ff66';
+      ctrlColor.value = themeColor;
+      valColor.textContent = themeColor;
+    }
+
+    ctrlTheme.addEventListener('change', () => {
+      valTheme.textContent = ctrlTheme.value;
+      // Clear any user color override so the new theme's color shows through,
+      // then snap the picker to match. Pass both in one call so the rain only
+      // re-resolves once.
+      play.setOptions({ theme: ctrlTheme.value, color: null });
+      syncColorPickerToTheme(ctrlTheme.value);
+    });
+    ctrlFontsize.addEventListener('input', () => {
+      valFontsize.textContent = ctrlFontsize.value;
+      play.setOptions({ fontSize: +ctrlFontsize.value });
+    });
+    ctrlSpeed.addEventListener('input', () => {
+      valSpeed.textContent = ctrlSpeed.value;
+      play.setOptions({ speed: +ctrlSpeed.value });
+    });
+    ctrlDensity.addEventListener('input', () => {
+      valDensity.textContent = (+ctrlDensity.value).toFixed(2);
+      play.setOptions({ density: +ctrlDensity.value });
+    });
+    ctrlColor.addEventListener('input', () => {
+      valColor.textContent = ctrlColor.value;
+      play.setOptions({ color: ctrlColor.value });
+    });
+    ctrlColorReset.addEventListener('click', () => {
+      play.setOptions({ color: null });
+      syncColorPickerToTheme(ctrlTheme.value);
+    });
+
+    // Initial sync — match picker to the default theme on load
+    syncColorPickerToTheme(ctrlTheme.value);
+
+    // ---------- Theme gallery ----------
+    const grid = document.getElementById('theme-grid');
+    const tileThemes = [
+      'matrix', 'binary', 'emoji', 'terminal', 'bloodrain', 'arctic', 'gbf'
+    ];
+    tileThemes.forEach(name => {
+      const tile = document.createElement('div');
+      tile.className = 'theme-tile';
+      tile.dataset.theme = name;
+      tile.innerHTML = `
+        <div class="theme-tile__rain"></div>
+        <span class="theme-tile__label">${name}</span>
+      `;
+      grid.appendChild(tile);
+      new MatrixRain(tile.querySelector('.theme-tile__rain'), {
+        theme: name,
+        fontSize: name === 'emoji' ? 18 : 14,
+        speed: name === 'emoji' ? 70 : 45,
+        density: name === 'emoji' ? 0.55 : 0.85,
+      });
+    });
+  </script>
+
+</body>
+</html>
