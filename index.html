@@ -3,14 +3,47 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self';">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <title>matrixrain.js — Matrix digital rain canvas animation</title>
+  <meta name="description" content="Matrix digital-rain effect as a themeable canvas plugin. Classic green katakana plus binary, emoji, terminal, bloodrain, arctic, and GBF themes. Tiny API.">
+  <meta name="keywords" content="matrix rain javascript, matrix code rain animation, katakana falling code effect, matrix digital rain canvas, matrix effect plugin, themeable matrix rain, matrix screensaver, canvas animation library, matrix code background, matrix rain canvas">
+  <meta name="author" content="Go Boldly Forward">
 
-  <title>matrixrain — Matrix-style digital rain as a drop-in plugin</title>
-  <meta name="description" content="The Matrix digital rain effect as a themeable canvas plugin. Ships with classic green katakana plus binary, emoji, terminal, bloodrain, arctic, and GBF themes.">
+  <link rel="canonical" href="https://goboldlyforward.github.io/matrixrain/">
 
-  <meta property="og:title" content="matrixrain — Matrix digital rain as a drop-in plugin">
-  <meta property="og:description" content="The Matrix digital rain effect as a themeable canvas plugin. Classic green katakana plus binary, emoji, terminal, bloodrain, arctic, and GBF themes.">
   <meta property="og:type" content="website">
+  <meta property="og:title" content="matrixrain.js — Matrix digital rain canvas animation">
+  <meta property="og:description" content="Matrix digital-rain effect as a themeable canvas plugin. Classic green katakana plus binary, emoji, terminal, bloodrain, arctic, and GBF themes. Tiny API.">
   <meta property="og:url" content="https://goboldlyforward.github.io/matrixrain/">
+  <meta property="og:site_name" content="Go Boldly Forward Plugins">
+
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="matrixrain.js — Matrix digital rain canvas animation">
+  <meta name="twitter:description" content="Matrix digital-rain effect as a themeable canvas plugin. Classic green katakana plus binary, emoji, terminal, bloodrain, arctic, and GBF themes. Tiny API.">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "matrixrain.js",
+    "description": "Matrix digital-rain effect as a themeable canvas plugin. Classic green katakana plus binary, emoji, terminal, bloodrain, arctic, and GBF themes. Tiny API.",
+    "url": "https://goboldlyforward.github.io/matrixrain/",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Web Browser",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "author": {
+      "@type": "Organization",
+      "name": "Go Boldly Forward",
+      "url": "https://goboldlyforward.com"
+    },
+    "keywords": "matrix rain javascript, matrix code rain animation, katakana falling code effect, matrix digital rain canvas, matrix effect plugin, themeable matrix rain, matrix screensaver, canvas animation library, matrix code background, matrix rain canvas"
+  }
+  </script>
 
   <link rel="preconnect" href="https://rsms.me/">
   <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
@@ -25,10 +58,14 @@
       --gbf-accent-soft: rgba(22, 163, 74, 0.10);
     }
     @media (prefers-color-scheme: dark) {
-      :root {
+      :root:not([data-theme]) {
         --gbf-accent:      #4ade80;                  /* green-400 */
         --gbf-accent-soft: rgba(74, 222, 128, 0.14);
       }
+    }
+    :root[data-theme="dark"] {
+      --gbf-accent:      #4ade80;
+      --gbf-accent-soft: rgba(74, 222, 128, 0.14);
     }
 
     /* h3 inside .gbf-section (sub-headings). */
@@ -262,23 +299,27 @@
   </style>
 </head>
 <body>
+  <button class="gbf-theme-toggle" type="button" aria-label="Toggle dark mode" aria-pressed="false">
+    <span class="gbf-theme-toggle__icon" aria-hidden="true">☾</span>
+  </button>
 
   <header class="gbf-header hero-rain">
     <div class="hero-rain__rain" id="hero-rain"></div>
     <div class="gbf-container">
       <p class="gbf-eyebrow">Plugin</p>
-      <h1 class="gbf-title">matrix<span class="gbf-title__accent">rain</span></h1>
-      <p class="gbf-tagline">The iconic Matrix digital rain as a themeable canvas plugin. Ships with classic green katakana plus binary, emoji, terminal, bloodrain, arctic, and GBF themes — and a tiny API for live-tuning font size, speed, and density.</p>
+      <h1 class="gbf-title">matrixrain<span class="gbf-title__accent">.js</span></h1>
+      <p class="gbf-tagline">The iconic Matrix digital rain as a themeable canvas plugin. Ships with multiple themes and a tiny API for live-tuning font size, speed, and density.</p>
       <code class="gbf-install">npm install @goboldlyforward/matrixrain</code>
       <nav class="gbf-nav">
         <a href="https://github.com/GoBoldlyForward/matrixrain">GitHub</a>
         <a href="https://www.npmjs.com/package/@goboldlyforward/matrixrain">npm</a>
         <a href="https://github.com/GoBoldlyForward/matrixrain#readme">Docs</a>
-        <a href="https://github.com/GoBoldlyForward/matrixrain/blob/master/CHANGELOG.md">Changelog</a>
+        <a href="https://github.com/GoBoldlyForward/matrixrain/blob/main/CHANGELOG.md">Changelog</a>
       </nav>
     </div>
   </header>
 
+  <main>
   <section class="gbf-section">
     <div class="gbf-container">
       <p class="gbf-eyebrow gbf-eyebrow--accent">Playground</p>
@@ -418,6 +459,7 @@ rain.destroy();              // tear down canvas + listeners</code></pre>
    host element (CSS gradient, image, video) shows through the rain. */</code></pre>
     </div>
   </section>
+  </main>
 
   <footer class="gbf-footer">
     <div class="gbf-container gbf-footer__row">
@@ -429,6 +471,27 @@ rain.destroy();              // tear down canvas + listeners</code></pre>
   <script src="matrixrain.js"></script>
   <script>
     document.getElementById('current-year').textContent = new Date().getFullYear();
+
+    (() => {
+      const root = document.documentElement;
+      const toggle = document.querySelector('.gbf-theme-toggle');
+      const icon = toggle.querySelector('.gbf-theme-toggle__icon');
+      const apply = (theme) => {
+        root.setAttribute('data-theme', theme);
+        const isDark = theme === 'dark';
+        icon.textContent = isDark ? '☀' : '☾';
+        toggle.setAttribute('aria-pressed', String(isDark));
+        toggle.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+      };
+      const stored = localStorage.getItem('gbf-theme');
+      const initial = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      apply(initial);
+      toggle.addEventListener('click', () => {
+        const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        apply(next);
+        localStorage.setItem('gbf-theme', next);
+      });
+    })();
 
     // ---------- Hero header ----------
     new MatrixRain('#hero-rain', {

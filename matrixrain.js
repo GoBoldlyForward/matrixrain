@@ -94,19 +94,19 @@
 
   const DEFAULTS = {
     theme: 'matrix',
-    charset: null,         // string OR array; overrides theme
-    color: null,           // overrides theme
-    leadColor: null,       // overrides theme; set to false to disable lead-head
-    background: null,      // overrides theme; set to 'transparent' to let parent show through
-    fadeAlpha: null,       // 0–1; overrides theme; lower = longer trails
-    fontSize: 16,          // px (CSS pixels)
-    fontFamily: null,      // overrides theme
-    speed: 33,             // ms per frame (lower = faster)
-    density: 1.0,          // 0–1, fraction of columns actively raining
-    glow: null,            // px shadowBlur; overrides theme
-    columnRatio: null,     // column width = fontSize * columnRatio (theme default 1.0)
-    rowRatio: 1.0,         // row step = fontSize * rowRatio
-    resetChance: 0.025,    // per-frame probability that a fallen drop resets to top
+    charset: null,
+    color: null,
+    leadColor: null,
+    background: null,
+    fadeAlpha: null,
+    fontSize: 16,
+    fontFamily: null,
+    speed: 33,
+    density: 1.0,
+    glow: null,
+    columnRatio: null,
+    rowRatio: 1.0,
+    resetChance: 0.025,
     paused: false,
     autoStart: true,
   };
@@ -116,7 +116,6 @@
     if (typeof input === 'string') {
       const m = input.trim().toLowerCase();
       if (m === 'transparent' || m === 'none') return null;
-      // #rgb / #rrggbb
       if (m[0] === '#') {
         let hex = m.slice(1);
         if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
@@ -128,7 +127,6 @@
           };
         }
       }
-      // rgb()/rgba()
       const rgbMatch = m.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
       if (rgbMatch) {
         return {
@@ -146,9 +144,8 @@
     return Array.from(String(charset || ''));
   }
 
-  // Theme-overridable defaults. Any field a theme can define lives here so
-  // resolveOptions knows which fields should fall back to the theme (and not
-  // bleed across theme swaps) versus which are plain user-controlled defaults.
+  // Theme-overridable fields fall back to theme defaults; explicit `null` in
+  // userOpts clears a previous override.
   const THEME_OVERRIDABLE = [
     'charset', 'color', 'leadColor', 'background',
     'fadeAlpha', 'glow', 'fontFamily', 'columnRatio',
@@ -157,11 +154,7 @@
   function resolveOptions(userOpts) {
     const themeName = userOpts.theme || DEFAULTS.theme;
     const themeDef = THEMES[themeName] || {};
-    // Base = DEFAULTS, layered with theme defaults, then user overrides on top.
     const merged = Object.assign({}, DEFAULTS, themeDef, userOpts);
-    // For theme-overridable fields, an explicit `null` in userOpts means
-    // "use the theme default" (a way to clear a previous override). Anything
-    // userOpts didn't set falls through to themeDef via the Object.assign chain.
     THEME_OVERRIDABLE.forEach(k => {
       if (userOpts[k] == null) {
         merged[k] = themeDef[k] != null ? themeDef[k] : DEFAULTS[k];
@@ -219,10 +212,6 @@
       if (this.options.autoStart && !this.options.paused) this.start();
     }
 
-    /* ============================================================
-       Public API
-       ============================================================ */
-
     start() {
       if (this._running) return;
       this._running = true;
@@ -247,9 +236,7 @@
     setOptions(patch) {
       const wasRunning = this._running;
       const prevTheme = this.options.theme;
-      // Merge patch into user-overrides (NOT into the resolved options), so
-      // theme defaults can change on the next theme swap without being
-      // shadowed by previously-resolved theme values.
+      // Merge into user-overrides (not resolved options) so theme swaps work.
       Object.keys(patch || {}).forEach(k => {
         this._userOpts[k] = patch[k];
       });
@@ -280,10 +267,6 @@
       this._active = [];
     }
 
-    /* ============================================================
-       Internals
-       ============================================================ */
-
     _applyHostTheme() {
       if (!this._ownCanvas) return;
       if (this._currentThemeClass) {
@@ -298,7 +281,7 @@
       const box = (this._ownCanvas ? this.host : this.canvas).getBoundingClientRect();
       let w = Math.max(1, Math.floor(box.width));
       let h = Math.max(1, Math.floor(box.height));
-      // Fallback: if host has zero height (common with raw divs), use a safe default
+      // Raw <div> hosts often report 0 height — fall back to a sane default.
       if (h < 8) h = 240;
       return { w, h };
     }
@@ -392,9 +375,8 @@
       const bg = opts.background;
       const fadeAlpha = Math.max(0, Math.min(1, opts.fadeAlpha));
 
-      // 1. Trail fade
       if (!bg || bg === 'transparent') {
-        // Erase progressively on a transparent canvas
+        // destination-out erases progressively on a transparent canvas.
         const prev = ctx.globalCompositeOperation;
         ctx.globalCompositeOperation = 'destination-out';
         ctx.fillStyle = `rgba(0, 0, 0, ${fadeAlpha})`;
@@ -406,7 +388,6 @@
         ctx.fillRect(0, 0, w, h);
       }
 
-      // 2. Glyphs
       ctx.font = `${opts.fontSize}px ${opts.fontFamily || 'monospace'}`;
       ctx.textBaseline = 'top';
       const glow = +opts.glow || 0;
@@ -428,18 +409,16 @@
         const y = yIndex * rowStep;
         const ch = glyphs[Math.floor(Math.random() * glyphs.length)];
 
-        // Overwrite previous head in normal color (creates the bright-head + trail effect)
+        // Overwrite prior head in base color → bright-head + trail effect.
         if (leadColor && yIndex > 0 && this._prevChars[i] != null) {
           ctx.fillStyle = baseColor;
           ctx.fillText(this._prevChars[i], x, (yIndex - 1) * rowStep);
         }
 
-        // Draw current head
         ctx.fillStyle = leadColor || baseColor;
         ctx.fillText(ch, x, y);
         this._prevChars[i] = ch;
 
-        // Reset or advance
         if (y > h && Math.random() > 1 - opts.resetChance) {
           this._drops[i] = 0;
           this._prevChars[i] = null;

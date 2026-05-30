@@ -1,22 +1,8 @@
-/*!
- * matrixrain.css
- * Container styles and theme background hints for the matrix rain plugin.
- *
- * The rain itself lives inside a <canvas> that the plugin paints frame by
- * frame — these styles set up the host element, the canvas positioning, and
- * a per-theme fallback background color so the host looks "rained on" even
- * before the first frame paints.
- *
- *   <div class="hero">…</div>
- *   <script> new MatrixRain('.hero'); </script>
- *
- * The plugin auto-adds .matrixrain and .matrixrain--<theme> to the host.
- */
+/*! matrixrain.css — host + canvas styles for the matrix rain plugin. */
 
 .matrixrain {
   position: relative;
   overflow: hidden;
-  /* Fallback bg in case the canvas hasn't drawn yet */
   background-color: #000;
 }
 
@@ -30,18 +16,12 @@
   z-index: 0;
 }
 
-/* Anything the user drops INSIDE the host (titles, CTAs) should float
-   above the canvas. Use this helper, or set z-index: 1 on your own elements. */
+/* Anything dropped inside the host floats above the canvas. */
 .matrixrain__content,
 .matrixrain > *:not(.matrixrain__canvas) {
   position: relative;
   z-index: 1;
 }
-
-/* ─────────────────────────────────────────────────────────────────────────
-   Built-in theme backgrounds (match the canvas fade-target color so the
-   host element edges match what the canvas is painting).
-   ───────────────────────────────────────────────────────────────────────── */
 
 .matrixrain--matrix     { background-color: #000000; }
 .matrixrain--binary     { background-color: #000000; }
@@ -51,6 +31,4 @@
 .matrixrain--arctic     { background-color: #eef6ff; }
 .matrixrain--gbf        { background-color: #000000; }
 
-/* "Transparent" variant — when you set { background: 'transparent' } and want
-   the parent's background to show through completely. */
 .matrixrain--transparent { background-color: transparent; }
