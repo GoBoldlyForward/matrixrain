@@ -12,11 +12,22 @@ Mounts a `<canvas>` inside any container, paints a per-frame trail-fade digital 
 
 ## Install
 
-For now, download `matrixrain.css` and `matrixrain.js` from this repo. (npm publication pending.)
+```bash
+npm install @goboldlyforward/matrixrain
+```
+
+The script is UMD, so a bundler import works (the CSS ships alongside):
+
+```js
+import MatrixRain from '@goboldlyforward/matrixrain';
+import '@goboldlyforward/matrixrain/matrixrain.css';
+```
+
+Or drop it straight in from a CDN — no build step; the `<script>` exposes the `MatrixRain` global:
 
 ```html
-<link rel="stylesheet" href="path/to/matrixrain.css">
-<script src="path/to/matrixrain.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/@goboldlyforward/matrixrain/matrixrain.css">
+<script src="https://unpkg.com/@goboldlyforward/matrixrain/matrixrain.js"></script>
 ```
 
 ## Usage
@@ -168,7 +179,7 @@ HTML, CSS, and ~5KB of JavaScript. No framework, no build step. Uses `<canvas>` 
 - [x] Built-in themes: matrix, binary, emoji, terminal, bloodrain, arctic, gbf
 - [x] Transparent-background mode (composite over parent bg)
 - [x] Demo with controls + theme gallery
-- [ ] Publish to npm (as `@goboldlyforward/matrixrain`)
+- [x] Publish to npm (as `@goboldlyforward/matrixrain`)
 - [ ] Optional `matrixrain-rails` gem wrapper
 - [ ] GitHub Actions CI (stylelint + eslint)
 - [ ] Deploy demo to gh-pages
